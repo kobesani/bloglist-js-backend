@@ -1,23 +1,14 @@
 const mongoose = require("mongoose");
 
-const logger = require("../utils/logger.js");
-
-require("dotenv").config();
-
-const username = process.env.MONGODB_UN;
-const clusterUrl = "cluster0.fyizezj.mongodb.net";
-const dbName = "bloglistApp";
-const password = process.env.MONGODB_PW;
-
-const uri = `mongodb+srv://${username}:${password}` +
-  `@${clusterUrl}/${dbName}?retryWrites=true&w=majority`;
+const logger = require("../utils/logger");
+const config = require("../utils/config");
 
 mongoose.set("strictQuery", false);
 
 mongoose
-  .connect(uri)
+  .connect(config.MONGODB_URI)
   // eslint-disable-next-line no-unused-vars
-  .then(result => logger.info(`Connected to Mongodb: ${dbName}`))
+  .then(result => logger.info(`Connected to Mongodb: ${config.DBNAME}`))
   // eslint-disable-next-line no-unused-vars
   .catch(error => logger.error("Error connecting to MongoDB"));
 
