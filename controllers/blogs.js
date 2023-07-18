@@ -4,26 +4,23 @@ const Blog = require("../models/blog");
 const logger = require("../utils/logger");
 
 blogsRouter.get("/", (request, response) => {
-  Blog
-    .find({})
+  Blog.find({})
     .then(blogs => {
-      response.json(blogs);
+      return (response.json(blogs));
     });
 });
 
 blogsRouter.get("/:id", (request, response) => {
-  Blog
-    .findById(request.params.id)
+  Blog.findById(request.params.id)
     .then(foundBlog => {
-      response.json(foundBlog);
+      return (response.json(foundBlog));
     });
 });
 
 blogsRouter.delete("/:id", (request, response) => {
-  Blog
-    .findByIdAndDelete(request.params.id)
+  Blog.findByIdAndRemove(request.params.id)
     .then(deletedBlog => {
-      response.status(204).json(deletedBlog);
+      return (response.status(200).json(deletedBlog));
     });
 });
 
@@ -33,8 +30,7 @@ blogsRouter.post("/", (request, response) => {
   logger.info(blog);
   logger.info(request.body);
 
-  blog
-    .save()
+  blog.save()
     .then(result => {
       response.status(201).json(result);
     });
