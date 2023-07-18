@@ -1,0 +1,25 @@
+{
+  "name": "bloglist-js-backend",
+  "version": "0.1.0",
+  "description": "express backend with mongodb for maintaining a list of blogs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "javascript",
+    "node",
+    "express"
+  ],
+  "author": "Kobi Rockata",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.45.0",
+    "nodemon": "^3.0.1"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "mongoose": "^7.3.4"
+  }
+}
