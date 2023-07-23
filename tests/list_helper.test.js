@@ -1,12 +1,6 @@
 const listHelper = require("../utils/list_helper");
 const listHelperData = require("./data/list_helper.data");
 
-test("dummy returns one", () => {
-  const blogs = [];
-  const result = listHelper.dummy(blogs);
-  expect(result).toBe(1);
-});
-
 describe("total likes", () => {
   test("of empty list is zero", () => {
     expect(listHelper.totalLikes(listHelperData.listWithNoBlogs)).toBe(0);
@@ -71,6 +65,40 @@ describe("most blogs", () => {
       {
         author: "Robert C. Martin", blogs: 3
       }
+    );
+  });
+
+  test("of a list with two blogs, two different authors, returns result", () => {
+    expect(listHelper.mostBlogs(listHelperData.listWithTwoBlogsTwoAuthors)).toEqual(
+      { author: "Edsger W. Dijkstra", blogs: 1 }
+    );
+  });
+});
+
+describe("most likes", () => {
+  test("of an empty list is null", () => {
+    expect(listHelper.mostLikes(listHelperData.listWithNoBlogs)).toBe(null);
+  });
+
+  test("of a list with a single blog is that one author with 1 blog", () => {
+    expect(listHelper.mostLikes(listHelperData.listWithOneBlog)).toEqual(
+      {
+        author: "Edsger W. Dijkstra", totalLikes: 5
+      }
+    );
+  });
+
+  test("of a list with several blogs is the author with the most likes", () => {
+    expect(listHelper.mostLikes(listHelperData.listWithSeveralBlogs)).toEqual(
+      {
+        author: "Edsger W. Dijkstra", totalLikes: 17
+      }
+    );
+  });
+
+  test("of a list where authors tie for most likes, returns one of them", () => {
+    expect(listHelper.mostLikes(listHelperData.listWithBlogsAuthorsSameLikes)).toEqual(
+      { author: "Edsger W. Dijkstra", totalLikes: 12 }
     );
   });
 });
