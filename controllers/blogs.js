@@ -24,7 +24,7 @@ blogsRouter.delete("/:id", (request, response) => {
     });
 });
 
-blogsRouter.post("/", (request, response) => {
+blogsRouter.post("/", (request, response, next) => {
   logger.info(request.json);
   const blog = new Blog(request.body);
   logger.info(blog);
@@ -33,7 +33,8 @@ blogsRouter.post("/", (request, response) => {
   blog.save()
     .then(result => {
       response.status(201).json(result);
-    });
+    })
+    .catch(error => next(error));
 });
 
 module.exports = blogsRouter;
