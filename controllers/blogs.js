@@ -29,7 +29,7 @@ blogsRouter.delete("/:id", async (request, response) => {
   }
 });
 
-blogsRouter.post("/", async (request, response) => {
+blogsRouter.post("/", async (request, response, next) => {
   try {
     logger.info(request.json);
     const blog = new Blog(request.body);
@@ -39,7 +39,7 @@ blogsRouter.post("/", async (request, response) => {
     const result = await blog.save();
     response.status(201).json(result);
   } catch (error) {
-    response.status(400).json({ error: "Bad request" });
+    next(error);
   }
 });
 
