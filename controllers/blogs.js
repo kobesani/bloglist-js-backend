@@ -38,13 +38,11 @@ blogsRouter.delete("/:id", async (request, response, next) => {
 
 blogsRouter.put("/:id", async (request, response, next) => {
   try {
-    console.log("here is the request body", request.body);
     const updatedBlog = await Blog.findByIdAndUpdate(
       request.params.id,
       { likes: request.body.likes },
       { new: true, runValidators: true, context: "query" }
     );
-    // console.log(updatedBlog);
     if (!updatedBlog) {
       throw new errors.BlogNotFoundError(request.params.id);
     }
