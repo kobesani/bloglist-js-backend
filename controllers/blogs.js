@@ -15,12 +15,12 @@ blogsRouter.get("/", async (request, response) => {
 blogsRouter.get("/:id", async (request, response, next) => {
   try {
     const foundBlog = await Blog.findById(request.params.id);
-    response.status(200).json(foundBlog);
     if (!foundBlog) {
-      throw errors.BlogNotFoundError(
+      throw new errors.BlogNotFoundError(
         `Error: blog with id = ${request.params.id} not found!`
       );
     }
+    response.status(200).json(foundBlog);
   } catch (error) {
     next(error);
   }
@@ -30,7 +30,7 @@ blogsRouter.delete("/:id", async (request, response, next) => {
   try {
     const deletedBlog = await Blog.findByIdAndRemove(request.params.id);
     if (!deletedBlog) {
-      throw errors.BlogNotFoundError(
+      throw new errors.BlogNotFoundError(
         `Error: blog with id = ${request.params.id} not found!`
       );
     }
