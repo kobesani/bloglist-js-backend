@@ -18,13 +18,13 @@ const unknownEndpoint = (request, response) => {
 const errorHandler = (error, request, response, next) => {
   logger.error(error.message);
   if (error.name === "CastError") {
-    response.setHeader(
-      "X-Status-Message",
-      "400 - bad request, please be sure the id is formatted properly"
-    );
     return (
-      response.status(400).send({ error: `malformatted id = ${request.params.id}` })
+      response.status(400).send(
+        { error: `400 - bad request - malformatted id = ${request.params.id}` }
+      )
     );
+  } else if (error.name === "ValidationError") {
+    return (response.status(400).json({ error: error.message }));
   }
   next(error);
 };
