@@ -16,9 +16,7 @@ blogsRouter.get("/:id", async (request, response, next) => {
   try {
     const foundBlog = await Blog.findById(request.params.id);
     if (!foundBlog) {
-      throw new errors.BlogNotFoundError(
-        `Error: blog with id = ${request.params.id} not found!`
-      );
+      throw new errors.BlogNotFoundError(request.params.id);
     }
     response.status(200).json(foundBlog);
   } catch (error) {
@@ -30,9 +28,7 @@ blogsRouter.delete("/:id", async (request, response, next) => {
   try {
     const deletedBlog = await Blog.findByIdAndRemove(request.params.id);
     if (!deletedBlog) {
-      throw new errors.BlogNotFoundError(
-        `Error: blog with id = ${request.params.id} not found!`
-      );
+      throw new errors.BlogNotFoundError(request.params.id);
     }
     response.status(200).json(deletedBlog);
   } catch (error) {

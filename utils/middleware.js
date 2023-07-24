@@ -28,7 +28,7 @@ const errorHandler = (error, request, response, next) => {
   } else if (error.name === "BlogNotFoundError") {
     return (
       response.status(404).json(
-        { error: `blog with id = ${request.params.id} not found!` }
+        { error: `blog with id = ${error.blogId} not found!` }
       )
     );
   }
