@@ -100,3 +100,23 @@ test("a blog can be deleted", async () => {
 afterAll(async () => {
   await mongoose.connection.close();
 });
+test("when likes are missing in post, defaults to 0", async () => {
+  const newBlog = {
+    title: "Type wars",
+    author: "Robert C. Martin",
+    url: "http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html",
+  };
+
+  const returnedBlog = await api
+    .post("/api/blogs")
+    .send(newBlog)
+    .expect(201)
+    .expect("Content-Type", /application\/json/);
+
+  const retrievedBlog = await api
+    .get(`/api/blogs/${returnedBlog.body.id}`)
+    .expect(200)
+    .expect("Content-Type", /application\/json/);
+  expect(retrievedBlog.body.id).toEqual(returnedBlog.body.id);
+  expect(retrievedBlog.body.likes).toBe(0);
+});
