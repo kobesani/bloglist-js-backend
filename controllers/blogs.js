@@ -1,6 +1,7 @@
 const blogsRouter = require("express").Router();
 const Blog = require("../models/blog");
 const logger = require("../utils/logger");
+const errors = require("../utils/errors");
 
 blogsRouter.get("/", async (request, response) => {
   try {
@@ -11,21 +12,31 @@ blogsRouter.get("/", async (request, response) => {
   }
 });
 
-blogsRouter.get("/:id", async (request, response) => {
+blogsRouter.get("/:id", async (request, response, next) => {
   try {
     const foundBlog = await Blog.findById(request.params.id);
-    response.json(foundBlog);
+    response.status(200).json(foundBlog);
+    if (!foundBlog) {
+      throw errors.BlogNotFoundError(
+        `Error: blog with id = ${request.params.id} not found!`
+      );
+    }
   } catch (error) {
-    response.status(404).json({ error: "Blog not found" });
+    next(error);
   }
 });
 
-blogsRouter.delete("/:id", async (request, response) => {
+blogsRouter.delete("/:id", async (request, response, next) => {
   try {
     const deletedBlog = await Blog.findByIdAndRemove(request.params.id);
+    if (!deletedBlog) {
+      throw errors.BlogNotFoundError(
+        `Error: blog with id = ${request.params.id} not found!`
+      );
+    }
     response.status(200).json(deletedBlog);
   } catch (error) {
-    response.status(404).json({ error: "Blog not found" });
+    next(error);
   }
 });
 

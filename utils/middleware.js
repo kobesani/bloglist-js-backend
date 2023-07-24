@@ -25,6 +25,8 @@ const errorHandler = (error, request, response, next) => {
     );
   } else if (error.name === "ValidationError") {
     return (response.status(400).json({ error: error.message }));
+  } else if (error.name === "BlogNotFoundError") {
+    return (response.status(404).json({ error: "Blog not found" }));
   }
   next(error);
 };
