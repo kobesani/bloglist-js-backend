@@ -1,40 +1,53 @@
 const blogsRouter = require("express").Router();
 const Blog = require("../models/blog");
-
 const logger = require("../utils/logger");
+const errors = require("../utils/errors");
 
-blogsRouter.get("/", (request, response) => {
-  Blog.find({})
-    .then(blogs => {
-      return (response.json(blogs));
-    });
+blogsRouter.get("/", async (request, response) => {
+  try {
+    const blogs = await Blog.find({});
+    response.json(blogs);
+  } catch (error) {
+    response.status(500).json({ error: "Something went wrong" });
+  }
 });
 
-blogsRouter.get("/:id", (request, response) => {
-  Blog.findById(request.params.id)
-    .then(foundBlog => {
-      return (response.json(foundBlog));
-    });
+blogsRouter.get("/:id", async (request, response, next) => {
+  try {
+    const foundBlog = await Blog.findById(request.params.id);
+    if (!foundBlog) {
+      throw new errors.BlogNotFoundError(request.params.id);
+    }
+    response.status(200).json(foundBlog);
+  } catch (error) {
+    next(error);
+  }
 });
 
-blogsRouter.delete("/:id", (request, response) => {
-  Blog.findByIdAndRemove(request.params.id)
-    .then(deletedBlog => {
-      return (response.status(200).json(deletedBlog));
-    });
+blogsRouter.delete("/:id", async (request, response, next) => {
+  try {
+    const deletedBlog = await Blog.findByIdAndRemove(request.params.id);
+    if (!deletedBlog) {
+      throw new errors.BlogNotFoundError(request.params.id);
+    }
+    response.status(200).json(deletedBlog);
+  } catch (error) {
+    next(error);
+  }
 });
 
-blogsRouter.post("/", (request, response, next) => {
-  logger.info(request.json);
-  const blog = new Blog(request.body);
-  logger.info(blog);
-  logger.info(request.body);
+blogsRouter.post("/", async (request, response, next) => {
+  try {
+    logger.info(request.json);
+    const blog = new Blog(request.body);
+    logger.info(blog);
+    logger.info(request.body);
 
-  blog.save()
-    .then(result => {
-      response.status(201).json(result);
-    })
-    .catch(error => next(error));
+    const result = await blog.save();
+    response.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = blogsRouter;
