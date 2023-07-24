@@ -38,10 +38,9 @@ blogsRouter.delete("/:id", async (request, response, next) => {
 
 blogsRouter.post("/", async (request, response, next) => {
   try {
-    logger.info(request.json);
-    const blog = new Blog(request.body);
-    logger.info(blog);
-    logger.info(request.body);
+    const blog = new Blog({
+      ...request.body, likes: request.body.likes || 0
+    });
 
     const result = await blog.save();
     response.status(201).json(result);
