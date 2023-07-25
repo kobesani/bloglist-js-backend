@@ -5,7 +5,10 @@ const usersRouter = require("express").Router();
 
 usersRouter.get("/", async (request, response) => {
   try {
-    const users = await User.find({});
+    const users = await User
+      .find({})
+      .populate("blogs", { title: 1, author: 1, url: 1, likes: 1 });
+
     response.status(200).json(users);
   } catch (error) {
     response.status(500).json({ error: "Something went wrong" });
