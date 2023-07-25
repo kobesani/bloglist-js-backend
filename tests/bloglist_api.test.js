@@ -1,7 +1,9 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
 const supertest = require("supertest");
 const app = require("../app");
 const Blog = require("../models/blog");
+const User = require("../models/user");
 const helper = require("./test_helper");
 const config = require("../utils/config");
 
@@ -12,7 +14,23 @@ beforeAll(config.createMongoDbConnection);
 beforeEach(
   async () => {
     await Blog.deleteMany({});
-    await Blog.insertMany(helper.initialBlogs);
+    await User.deleteMany();
+
+    const passwordHash = await bcrypt.hash("password123", 10);
+    const user = new User({
+      username: "root",
+      name: "root",
+      passwordHash
+    });
+
+    await user.save();
+    const initialBlogs = helper.initialBlogs.map(
+      blog => {
+        return ({ ...blog, user: user.id });
+      }
+    );
+
+    await Blog.insertMany(initialBlogs);
   }
 );
 
@@ -72,11 +90,15 @@ describe("when viewing a specific blog", () => {
 
 describe("addition of a new blog", () => {
   test("a valid blog can be added", async () => {
+    const usersAtStart = await helper.usersInDb();
+    const testUser = usersAtStart[0];
+
     const newBlog = {
       title: "Type wars",
       author: "Robert C. Martin",
       url: "http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html",
       likes: 2,
+      user: testUser.id
     };
 
     const addedBlog = await api
@@ -96,10 +118,14 @@ describe("addition of a new blog", () => {
   });
 
   test("when likes are missing in post, defaults to 0", async () => {
+    const usersAtStart = await helper.usersInDb();
+    const testUser = usersAtStart[0];
+
     const newBlog = {
       title: "Type wars",
       author: "Robert C. Martin",
       url: "http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html",
+      user: testUser.id
     };
 
     const returnedBlog = await api
@@ -117,7 +143,10 @@ describe("addition of a new blog", () => {
     expect(retrievedBlog.body.likes).toBe(0);
   });
 
-  test("a blog with no title or url cannot be added", async () => {
+  test("a blog with no title, url or user cannot be added", async () => {
+    const usersAtStart = await helper.usersInDb();
+    const testUser = usersAtStart[0];
+
     const blogsToBeTested = [
       {
         author: "Robert C. Martin",
@@ -129,6 +158,7 @@ describe("addition of a new blog", () => {
       },
       {
         author: "Robert C. Martin",
+        user: testUser.id
       }
     ];
 
@@ -140,6 +170,7 @@ describe("addition of a new blog", () => {
     );
 
     await Promise.all(blogPromises);
+
   });
 });
 
