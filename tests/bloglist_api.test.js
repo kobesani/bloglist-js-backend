@@ -3,8 +3,11 @@ const supertest = require("supertest");
 const app = require("../app");
 const Blog = require("../models/blog");
 const helper = require("./test_helper");
+const config = require("../utils/config");
 
 const api = supertest(app);
+
+beforeAll(config.createMongoDbConnection);
 
 beforeEach(
   async () => {
@@ -190,5 +193,5 @@ describe("updating a blog", () => {
 });
 
 afterAll(async () => {
-  await mongoose.connection.close();
+  await mongoose.disconnect();
 });
