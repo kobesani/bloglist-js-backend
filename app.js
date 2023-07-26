@@ -3,6 +3,7 @@ const cors = require("cors");
 const config = require("./utils/config");
 
 const blogsRouter = require("./controllers/blogs");
+const loginRouter = require("./controllers/login");
 const usersRouter = require("./controllers/users");
 const middleware = require("./utils/middleware");
 
@@ -19,6 +20,7 @@ app.use(middleware.morganConfig);
 
 app.use("/api/blogs", blogsRouter);
 app.use("/api/users", usersRouter);
+app.use("/api/login", loginRouter);
 
 app.use(middleware.unknownEndpoint);
 app.use(middleware.errorHandler);
