@@ -63,14 +63,12 @@ blogsRouter.post("/", async (request, response, next) => {
       request.token, process.env.JWT_SECRET_SIGNATURE
     );
     if (!decodedToken.id) {
-      return (
-        response.status(401).json({ error: "token invalid" })
-      );
+      throw new errors.InvalidTokenError(decodedToken);
     }
 
     const user = await User.findById(decodedToken.id);
     if (!user) {
-      response.status(401).json({ error: "token invalid - user not found" });
+      throw new errors.InvalidUserError(user);
     }
 
     const blog = new Blog({

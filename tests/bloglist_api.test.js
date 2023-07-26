@@ -160,7 +160,7 @@ describe("addition of a new blog", () => {
     expect(retrievedBlog.body.likes).toBe(0);
   });
 
-  test("a blog with no title or user cannot be added", async () => {
+  test("a blog with no title or url cannot be added", async () => {
     const usersAtStart = await helper.usersInDb();
     const testUser = usersAtStart[0];
 
