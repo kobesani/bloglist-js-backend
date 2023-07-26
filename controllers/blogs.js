@@ -1,7 +1,5 @@
-const jwt = require("jsonwebtoken");
 const blogsRouter = require("express").Router();
 const Blog = require("../models/blog");
-const User = require("../models/user");
 const errors = require("../utils/errors");
 
 blogsRouter.get("/", async (request, response) => {
@@ -31,10 +29,20 @@ blogsRouter.get("/:id", async (request, response, next) => {
 
 blogsRouter.delete("/:id", async (request, response, next) => {
   try {
-    const deletedBlog = await Blog.findByIdAndRemove(request.params.id);
-    if (!deletedBlog) {
+    const blogToDelete = await Blog.findById(request.params.id);
+
+    if (!blogToDelete) {
       throw new errors.BlogNotFoundError(request.params.id);
     }
+
+    const loggedInUserId = request.user._id.toString();
+    const blogOwnerUserId = blogToDelete.user.toString();
+
+    if (loggedInUserId !== blogOwnerUserId) {
+      throw new errors.UnauthorizedForDeletionError(request.user);
+    }
+
+    const deletedBlog = await blogToDelete.deleteOne();
     response.status(200).json(deletedBlog);
   } catch (error) {
     next(error);

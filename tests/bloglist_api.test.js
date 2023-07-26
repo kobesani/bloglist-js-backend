@@ -225,8 +225,20 @@ describe("deletion of a blog", () => {
     const blogsAtStart = await helper.blogsInDb();
     const blogToDelete = blogsAtStart[0];
 
+    const usersAtStart = await helper.usersInDb();
+    const testUser = usersAtStart[0];
+
+    const userLogin = await api
+      .post("/api/login")
+      .send(
+        { username: testUser.username, password: "password123" }
+      )
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
     const deletedBlog = await api
       .delete(`/api/blogs/${blogToDelete.id}`)
+      .set("Authorization", `Bearer ${userLogin.body.token}`)
       .expect(200)
       .expect("Content-Type", /application\/json/);
 
@@ -236,6 +248,54 @@ describe("deletion of a blog", () => {
       .toHaveLength(helper.initialBlogs.length - 1);
     expect(blogsAtEnd.map(blog => blog.id))
       .not.toContain(deletedBlog.body.id);
+    // blogToDelete has the user field populated, deletedBlog doesn't, only id
+    expect({ ...blogToDelete, user: blogToDelete.user.id })
+      .toEqual(deletedBlog.body);
+  });
+
+  test("cannot succeed from a user who did not create it", async () => {
+    const usersAtStart = await helper.usersInDb();
+    const testUser = usersAtStart[0];
+
+    const userLogin = await api
+      .post("/api/login")
+      .send({
+        username: testUser.username, password: "password123"
+      })
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
+    const passwordHash = await bcrypt.hash("password123", 10);
+    const user = new User({
+      username: "testuser",
+      name: "testuser",
+      passwordHash
+    });
+
+    await user.save();
+
+    const newBlog = new Blog({
+      title: "Type wars",
+      author: "Robert C. Martin",
+      url: "http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html",
+      likes: 2,
+      user: user._id.toString()
+    });
+
+    await newBlog.save();
+
+    await api
+      .delete(`/api/blogs/${newBlog._id}`)
+      .set("Authorization", `Bearer ${userLogin.body.token}`)
+      .expect(401);
+  });
+
+  test("fails with statuscode 404 if does not exist", async () => {
+    const validNonExistingId = await helper.nonExistingId();
+    await api
+      .delete(`/api/blogs/${validNonExistingId}`)
+      .send({ likes: 1 })
+      .expect(404);
   });
 });
 
@@ -243,7 +303,6 @@ describe("updating a blog", () => {
   test("a blog can be updated", async () => {
     const blogsAtStart = await helper.blogsInDb();
     const blogToUpdate = blogsAtStart[0];
-    console.log(`Here is the updated blog id: ${blogToUpdate.id}`);
 
     const updatedBlog = await api
       .put(`/api/blogs/${blogToUpdate.id}`)

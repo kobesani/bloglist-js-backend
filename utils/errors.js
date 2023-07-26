@@ -33,9 +33,17 @@ class InvalidTokenError extends Error {
   }
 }
 
+class UnauthorizedForDeletionError extends Error {
+  constructor(user) {
+    super(`This user: ${user.username} is not allowed to delete this blog`);
+    this.name = "UnauthorizedForDeletionError";
+  }
+}
+
 module.exports = {
   BlogNotFoundError,
   InvalidTokenError,
   InvalidUserError,
-  PasswordTooShortError
+  PasswordTooShortError,
+  UnauthorizedForDeletionError
 };
