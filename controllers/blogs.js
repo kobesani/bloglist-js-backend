@@ -14,7 +14,9 @@ const getTokenFrom = (request) => {
 
 blogsRouter.get("/", async (request, response) => {
   try {
-    const blogs = await Blog.find({}).populate("user", { username: 1, name: 1 });
+    const blogs = await Blog
+      .find({})
+      .populate("user", { username: 1, name: 1 });
     response.json(blogs);
   } catch (error) {
     response.status(500).json({ error: "Something went wrong" });
@@ -23,7 +25,9 @@ blogsRouter.get("/", async (request, response) => {
 
 blogsRouter.get("/:id", async (request, response, next) => {
   try {
-    const foundBlog = await Blog.findById(request.params.id);
+    const foundBlog = await Blog
+      .findById(request.params.id)
+      .populate("user", { username: 1, name: 1 });
     if (!foundBlog) {
       throw new errors.BlogNotFoundError(request.params.id);
     }
