@@ -6,6 +6,13 @@ class BlogNotFoundError extends Error {
   }
 }
 
+class PasswordTooShortError extends Error {
+  constructor(password) {
+    super(`Password length of ${password.length} is less than minimum of 3`);
+    this.name = "PasswordTooShortError";
+  }
+}
+
 module.exports = {
-  BlogNotFoundError
+  BlogNotFoundError, PasswordTooShortError
 };

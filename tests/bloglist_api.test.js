@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const supertest = require("supertest");
 const app = require("../app");
 const Blog = require("../models/blog");
@@ -93,16 +94,24 @@ describe("addition of a new blog", () => {
     const usersAtStart = await helper.usersInDb();
     const testUser = usersAtStart[0];
 
+    const userLogin = await api
+      .post("/api/login")
+      .send({
+        username: testUser.username, password: "password123"
+      })
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
     const newBlog = {
       title: "Type wars",
       author: "Robert C. Martin",
       url: "http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html",
       likes: 2,
-      user: testUser.id
     };
 
     const addedBlog = await api
       .post("/api/blogs")
+      .set("Authorization", `Bearer ${userLogin.body.token}`)
       .send(newBlog)
       .expect(201)
       .expect("Content-Type", /application\/json/);
@@ -121,15 +130,23 @@ describe("addition of a new blog", () => {
     const usersAtStart = await helper.usersInDb();
     const testUser = usersAtStart[0];
 
+    const userLogin = await api
+      .post("/api/login")
+      .send({
+        username: testUser.username, password: "password123"
+      })
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
     const newBlog = {
       title: "Type wars",
       author: "Robert C. Martin",
       url: "http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html",
-      user: testUser.id
     };
 
     const returnedBlog = await api
       .post("/api/blogs")
+      .set("Authorization", `Bearer ${userLogin.body.token}`)
       .send(newBlog)
       .expect(201)
       .expect("Content-Type", /application\/json/);
@@ -143,9 +160,17 @@ describe("addition of a new blog", () => {
     expect(retrievedBlog.body.likes).toBe(0);
   });
 
-  test("a blog with no title, url or user cannot be added", async () => {
+  test("a blog with no title or user cannot be added", async () => {
     const usersAtStart = await helper.usersInDb();
     const testUser = usersAtStart[0];
+
+    const userLogin = await api
+      .post("/api/login")
+      .send({
+        username: testUser.username, password: "password123"
+      })
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
 
     const blogsToBeTested = [
       {
@@ -158,19 +183,40 @@ describe("addition of a new blog", () => {
       },
       {
         author: "Robert C. Martin",
-        user: testUser.id
       }
     ];
 
     const blogPromises = blogsToBeTested.map(
       async blog => api
         .post("/api/blogs")
+        .set("Authorization", `Bearer ${userLogin.body.token}`)
         .send(blog)
         .expect(400)
     );
 
     await Promise.all(blogPromises);
+  });
 
+  test("fails without valid jwt token - statuscode 401", async () => {
+    const invalidJwtToken = jwt.sign({}, process.env.JWT_SECRET_SIGNATURE);
+
+    await api
+      .post("/api/blogs")
+      .send({})
+      .set("Authorization", `Bearer ${invalidJwtToken}`)
+      .expect(401);
+  });
+
+  test("fails without valid user from token - statuscode 401", async () => {
+    const invalidJwtToken = await helper.invalidJwtToken();
+
+    expect(invalidJwtToken).toBeDefined();
+
+    await api
+      .post("/api/blogs")
+      .send({})
+      .set("Authorization", `Bearer ${invalidJwtToken}`)
+      .expect(401);
   });
 });
 

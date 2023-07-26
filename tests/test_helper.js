@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const Blog = require("../models/blog");
 const User = require("../models/user");
 
@@ -35,6 +36,21 @@ const nonExistingId = async () => {
   return (blog._id);
 };
 
+const invalidJwtToken = async () => {
+  const nonExistingUser = new User({
+    username: "blah",
+    name: "blah",
+    passwordHash: await bcrypt.hash("password123", 10)
+  });
+
+  const userForToken = {
+    username: nonExistingUser.username,
+    id: nonExistingUser._id.toString()
+  };
+
+  return (jwt.sign(userForToken, process.env.JWT_SECRET_SIGNATURE));
+};
+
 const createUser = async () => {
   await User.deleteMany({});
   const user = new User({
@@ -57,5 +73,5 @@ const usersInDb = async () => {
 };
 
 module.exports = {
-  initialBlogs, nonExistingId, blogsInDb, usersInDb, createUser
+  initialBlogs, nonExistingId, blogsInDb, usersInDb, createUser, invalidJwtToken
 };

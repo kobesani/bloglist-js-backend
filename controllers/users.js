@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 
 const User = require("../models/user");
+const { PasswordTooShortError } = require("../utils/errors");
 const usersRouter = require("express").Router();
 
 usersRouter.get("/", async (request, response) => {
@@ -18,6 +19,10 @@ usersRouter.get("/", async (request, response) => {
 usersRouter.post("/", async (request, response, next) => {
   try {
     const { username, name, password } = request.body;
+
+    if (password.length < 3) {
+      throw new PasswordTooShortError(password);
+    }
 
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
