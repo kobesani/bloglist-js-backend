@@ -1,11 +1,12 @@
 const blogsRouter = require("express").Router();
 const Blog = require("../models/blog");
-const logger = require("../utils/logger");
 const errors = require("../utils/errors");
 
 blogsRouter.get("/", async (request, response) => {
   try {
-    const blogs = await Blog.find({});
+    const blogs = await Blog
+      .find({})
+      .populate("user", { username: 1, name: 1 });
     response.json(blogs);
   } catch (error) {
     response.status(500).json({ error: "Something went wrong" });
@@ -14,7 +15,9 @@ blogsRouter.get("/", async (request, response) => {
 
 blogsRouter.get("/:id", async (request, response, next) => {
   try {
-    const foundBlog = await Blog.findById(request.params.id);
+    const foundBlog = await Blog
+      .findById(request.params.id)
+      .populate("user", { username: 1, name: 1 });
     if (!foundBlog) {
       throw new errors.BlogNotFoundError(request.params.id);
     }
@@ -26,10 +29,20 @@ blogsRouter.get("/:id", async (request, response, next) => {
 
 blogsRouter.delete("/:id", async (request, response, next) => {
   try {
-    const deletedBlog = await Blog.findByIdAndRemove(request.params.id);
-    if (!deletedBlog) {
+    const blogToDelete = await Blog.findById(request.params.id);
+
+    if (!blogToDelete) {
       throw new errors.BlogNotFoundError(request.params.id);
     }
+
+    const loggedInUserId = request.user._id.toString();
+    const blogOwnerUserId = blogToDelete.user.toString();
+
+    if (loggedInUserId !== blogOwnerUserId) {
+      throw new errors.UnauthorizedForDeletionError(request.user);
+    }
+
+    const deletedBlog = await blogToDelete.deleteOne();
     response.status(200).json(deletedBlog);
   } catch (error) {
     next(error);
@@ -54,11 +67,17 @@ blogsRouter.put("/:id", async (request, response, next) => {
 
 blogsRouter.post("/", async (request, response, next) => {
   try {
+    const user = request.user;
     const blog = new Blog({
-      ...request.body, likes: request.body.likes || 0
+      ...request.body,
+      likes: request.body.likes || 0,
+      user: user._id.toString()
     });
 
     const result = await blog.save();
+
+    user.blogs = user.blogs.concat(result._id);
+    user.save();
     response.status(201).json(result);
   } catch (error) {
     next(error);

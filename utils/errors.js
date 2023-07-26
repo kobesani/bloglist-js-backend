@@ -6,6 +6,44 @@ class BlogNotFoundError extends Error {
   }
 }
 
+class PasswordTooShortError extends Error {
+  constructor(password) {
+    super(`Password length of ${password.length} is less than minimum of 3`);
+    this.name = "PasswordTooShortError";
+  }
+}
+
+class InvalidUserError extends Error {
+  constructor(user) {
+    if (!user) {
+      super("No user found associated with JSON web token");
+    } else {
+      super(`User: ${user.username} was not found`);
+    }
+    this.name = "InvalidUserError";
+  }
+}
+
+class InvalidTokenError extends Error {
+  constructor(token) {
+    super(
+      `Decoded token with keys: [${Object.keys(token).join(", ")}] is invalid`
+    );
+    this.name = "InvalidTokenError";
+  }
+}
+
+class UnauthorizedForDeletionError extends Error {
+  constructor(user) {
+    super(`This user: ${user.username} is not allowed to delete this blog`);
+    this.name = "UnauthorizedForDeletionError";
+  }
+}
+
 module.exports = {
-  BlogNotFoundError
+  BlogNotFoundError,
+  InvalidTokenError,
+  InvalidUserError,
+  PasswordTooShortError,
+  UnauthorizedForDeletionError
 };

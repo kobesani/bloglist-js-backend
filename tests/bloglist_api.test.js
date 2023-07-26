@@ -1,15 +1,37 @@
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const supertest = require("supertest");
 const app = require("../app");
 const Blog = require("../models/blog");
+const User = require("../models/user");
 const helper = require("./test_helper");
+const config = require("../utils/config");
 
 const api = supertest(app);
+
+beforeAll(config.createMongoDbConnection);
 
 beforeEach(
   async () => {
     await Blog.deleteMany({});
-    await Blog.insertMany(helper.initialBlogs);
+    await User.deleteMany();
+
+    const passwordHash = await bcrypt.hash("password123", 10);
+    const user = new User({
+      username: "root",
+      name: "root",
+      passwordHash
+    });
+
+    await user.save();
+    const initialBlogs = helper.initialBlogs.map(
+      blog => {
+        return ({ ...blog, user: user.id });
+      }
+    );
+
+    await Blog.insertMany(initialBlogs);
   }
 );
 
@@ -69,6 +91,17 @@ describe("when viewing a specific blog", () => {
 
 describe("addition of a new blog", () => {
   test("a valid blog can be added", async () => {
+    const usersAtStart = await helper.usersInDb();
+    const testUser = usersAtStart[0];
+
+    const userLogin = await api
+      .post("/api/login")
+      .send({
+        username: testUser.username, password: "password123"
+      })
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
     const newBlog = {
       title: "Type wars",
       author: "Robert C. Martin",
@@ -78,6 +111,7 @@ describe("addition of a new blog", () => {
 
     const addedBlog = await api
       .post("/api/blogs")
+      .set("Authorization", `Bearer ${userLogin.body.token}`)
       .send(newBlog)
       .expect(201)
       .expect("Content-Type", /application\/json/);
@@ -93,6 +127,17 @@ describe("addition of a new blog", () => {
   });
 
   test("when likes are missing in post, defaults to 0", async () => {
+    const usersAtStart = await helper.usersInDb();
+    const testUser = usersAtStart[0];
+
+    const userLogin = await api
+      .post("/api/login")
+      .send({
+        username: testUser.username, password: "password123"
+      })
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
     const newBlog = {
       title: "Type wars",
       author: "Robert C. Martin",
@@ -101,6 +146,7 @@ describe("addition of a new blog", () => {
 
     const returnedBlog = await api
       .post("/api/blogs")
+      .set("Authorization", `Bearer ${userLogin.body.token}`)
       .send(newBlog)
       .expect(201)
       .expect("Content-Type", /application\/json/);
@@ -115,6 +161,17 @@ describe("addition of a new blog", () => {
   });
 
   test("a blog with no title or url cannot be added", async () => {
+    const usersAtStart = await helper.usersInDb();
+    const testUser = usersAtStart[0];
+
+    const userLogin = await api
+      .post("/api/login")
+      .send({
+        username: testUser.username, password: "password123"
+      })
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
     const blogsToBeTested = [
       {
         author: "Robert C. Martin",
@@ -132,11 +189,34 @@ describe("addition of a new blog", () => {
     const blogPromises = blogsToBeTested.map(
       async blog => api
         .post("/api/blogs")
+        .set("Authorization", `Bearer ${userLogin.body.token}`)
         .send(blog)
         .expect(400)
     );
 
     await Promise.all(blogPromises);
+  });
+
+  test("fails without valid jwt token - statuscode 401", async () => {
+    const invalidJwtToken = jwt.sign({}, process.env.JWT_SECRET_SIGNATURE);
+
+    await api
+      .post("/api/blogs")
+      .send({})
+      .set("Authorization", `Bearer ${invalidJwtToken}`)
+      .expect(401);
+  });
+
+  test("fails without valid user from token - statuscode 401", async () => {
+    const invalidJwtToken = await helper.invalidJwtToken();
+
+    expect(invalidJwtToken).toBeDefined();
+
+    await api
+      .post("/api/blogs")
+      .send({})
+      .set("Authorization", `Bearer ${invalidJwtToken}`)
+      .expect(401);
   });
 });
 
@@ -145,8 +225,20 @@ describe("deletion of a blog", () => {
     const blogsAtStart = await helper.blogsInDb();
     const blogToDelete = blogsAtStart[0];
 
+    const usersAtStart = await helper.usersInDb();
+    const testUser = usersAtStart[0];
+
+    const userLogin = await api
+      .post("/api/login")
+      .send(
+        { username: testUser.username, password: "password123" }
+      )
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
     const deletedBlog = await api
       .delete(`/api/blogs/${blogToDelete.id}`)
+      .set("Authorization", `Bearer ${userLogin.body.token}`)
       .expect(200)
       .expect("Content-Type", /application\/json/);
 
@@ -156,6 +248,54 @@ describe("deletion of a blog", () => {
       .toHaveLength(helper.initialBlogs.length - 1);
     expect(blogsAtEnd.map(blog => blog.id))
       .not.toContain(deletedBlog.body.id);
+    // blogToDelete has the user field populated, deletedBlog doesn't, only id
+    expect({ ...blogToDelete, user: blogToDelete.user.id })
+      .toEqual(deletedBlog.body);
+  });
+
+  test("cannot succeed from a user who did not create it", async () => {
+    const usersAtStart = await helper.usersInDb();
+    const testUser = usersAtStart[0];
+
+    const userLogin = await api
+      .post("/api/login")
+      .send({
+        username: testUser.username, password: "password123"
+      })
+      .expect(200)
+      .expect("Content-Type", /application\/json/);
+
+    const passwordHash = await bcrypt.hash("password123", 10);
+    const user = new User({
+      username: "testuser",
+      name: "testuser",
+      passwordHash
+    });
+
+    await user.save();
+
+    const newBlog = new Blog({
+      title: "Type wars",
+      author: "Robert C. Martin",
+      url: "http://blog.cleancoder.com/uncle-bob/2016/05/01/TypeWars.html",
+      likes: 2,
+      user: user._id.toString()
+    });
+
+    await newBlog.save();
+
+    await api
+      .delete(`/api/blogs/${newBlog._id}`)
+      .set("Authorization", `Bearer ${userLogin.body.token}`)
+      .expect(401);
+  });
+
+  test("fails with statuscode 404 if does not exist", async () => {
+    const validNonExistingId = await helper.nonExistingId();
+    await api
+      .delete(`/api/blogs/${validNonExistingId}`)
+      .send({ likes: 1 })
+      .expect(404);
   });
 });
 
@@ -163,7 +303,6 @@ describe("updating a blog", () => {
   test("a blog can be updated", async () => {
     const blogsAtStart = await helper.blogsInDb();
     const blogToUpdate = blogsAtStart[0];
-    console.log(`Here is the updated blog id: ${blogToUpdate.id}`);
 
     const updatedBlog = await api
       .put(`/api/blogs/${blogToUpdate.id}`)
@@ -190,5 +329,5 @@ describe("updating a blog", () => {
 });
 
 afterAll(async () => {
-  await mongoose.connection.close();
+  await mongoose.disconnect();
 });

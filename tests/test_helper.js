@@ -1,4 +1,7 @@
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 const Blog = require("../models/blog");
+const User = require("../models/user");
 
 const initialBlogs = [
   {
@@ -16,22 +19,61 @@ const initialBlogs = [
 ];
 
 const nonExistingId = async () => {
+  const user = new User({
+    username: "root",
+    name: "root",
+    passwordHash: await bcrypt.hash("password123", 10)
+  });
+
   const blog = new Blog({
     title: "test blog name",
     author: "test author name",
     url: "test blog url",
-    likes: 0
+    likes: 0,
+    user: user._id
   });
-  await blog.save();
-  await blog.deleteOne();
-  return (blog._id.toString());
+
+  return (blog._id);
+};
+
+const invalidJwtToken = async () => {
+  const nonExistingUser = new User({
+    username: "blah",
+    name: "blah",
+    passwordHash: await bcrypt.hash("password123", 10)
+  });
+
+  const userForToken = {
+    username: nonExistingUser.username,
+    id: nonExistingUser._id.toString()
+  };
+
+  return (jwt.sign(userForToken, process.env.JWT_SECRET_SIGNATURE));
+};
+
+const createUser = async () => {
+  await User.deleteMany({});
+  const user = new User({
+    username: "kobisan",
+    name: "Kobi Rockata",
+    passwordHash: await bcrypt.hash("password123", 10)
+  });
+  await user.save();
+  return (user);
 };
 
 const blogsInDb = async () => {
-  const blogs = await Blog.find({});
+  const blogs = await Blog
+    .find({})
+    .populate("user", { username: 1, name: 1 });
   return (blogs.map(blog => blog.toJSON()));
 };
 
+const usersInDb = async () => {
+  const users = await User.find({});
+  return (users.map(user => user.toJSON()));
+};
+
 module.exports = {
-  initialBlogs, nonExistingId, blogsInDb
+  initialBlogs, nonExistingId, blogsInDb, usersInDb, createUser, invalidJwtToken
 };
