@@ -59,18 +59,7 @@ blogsRouter.put("/:id", async (request, response, next) => {
 
 blogsRouter.post("/", async (request, response, next) => {
   try {
-    const decodedToken = jwt.verify(
-      request.token, process.env.JWT_SECRET_SIGNATURE
-    );
-    if (!decodedToken.id) {
-      throw new errors.InvalidTokenError(decodedToken);
-    }
-
-    const user = await User.findById(decodedToken.id);
-    if (!user) {
-      throw new errors.InvalidUserError(user);
-    }
-
+    const user = request.user;
     const blog = new Blog({
       ...request.body,
       likes: request.body.likes || 0,
