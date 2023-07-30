@@ -6,14 +6,17 @@ const PORT = process.env.PORT || 3001;
 
 const username = process.env.MONGODB_UN;
 const clusterUrl = "cluster0.fyizezj.mongodb.net";
+
 const password = process.env.MONGODB_PW;
 
 const DATABASE_NAME = process.env.NODE_ENV === "test"
   ? process.env.TEST_DATABASE_NAME
   : process.env.DATABASE_NAME;
 
-const MONGODB_URI = `mongodb+srv://${username}:${password}` +
-  `@${clusterUrl}/${DATABASE_NAME}?retryWrites=true&w=majority`;
+const MONGODB_URI = process.env.MONGODB_URL
+  ? process.env.MONGODB_URL
+  : `mongodb+srv://${username}:${password}` +
+    `@${clusterUrl}/${DATABASE_NAME}?retryWrites=true&w=majority`;
 
 const createMongoDbConnection = async () => {
   try {
