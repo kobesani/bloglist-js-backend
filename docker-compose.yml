@@ -1,7 +1,6 @@
-version: '3.1'
+version: '3.8'
 
 services:
-
   mongo:
     image: mongo:6.0.8
     restart: always
@@ -12,7 +11,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
     volumes:
-      - ./.mongo-data:/data/db:rw
+      - mongo:/data/db:rw
 
   mongo-express:
     image: mongo-express
@@ -41,3 +40,6 @@ services:
       PORT: 3001
       MONGO_CLUSTER_URL: "mongo:27017"
       MONGODB_URL: mongodb://root:example@mongo:27017/
+
+volumes:
+  mongo:
