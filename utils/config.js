@@ -9,9 +9,14 @@ const clusterUrl = "cluster0.fyizezj.mongodb.net";
 
 const password = process.env.MONGODB_PW;
 
-const DATABASE_NAME = process.env.NODE_ENV === "test"
-  ? process.env.TEST_DATABASE_NAME
-  : process.env.DATABASE_NAME;
+const DATABASE_NAME =
+  // testing with jest or testing e2e with cypress
+  (
+    process.env.NODE_ENV === "test"
+      || process.env.NODE_ENV === "cypress"
+  )
+    ? process.env.TEST_DATABASE_NAME
+    : process.env.DATABASE_NAME;
 
 const MONGODB_URI = process.env.MONGODB_URL
   ? process.env.MONGODB_URL
